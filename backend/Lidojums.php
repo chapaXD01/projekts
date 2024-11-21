@@ -1,97 +1,43 @@
 <?php
 
-class Lidojums {
-    private string $flightCode;
-    private string $origin;
-    private string $destination;
-    private DateTime $departureTime;
-    private string $aircraft;
-
-    /**
-     * Flight constructor.
-     *
-     * @param string $flightCode Lidojuma kods
-     * @param string $origin Izlidošanas lidosta
-     * @param string $destination Galamērķa lidosta
-     * @param DateTime $departureTime Izlidošanas datums un laiks
-     * @param string $aircraft Lidmašīna
-     */
+class mansLidojums {
     public function __construct(
-        string $flightCode,
-        string $origin,
-        string $destination,
-        DateTime $departureTime,
-        string $aircraft
-    ) {
-        $this->flightCode = $flightCode;
-        $this->origin = $origin;
-        $this->destination = $destination;
-        $this->departureTime = $departureTime;
-        $this->aircraft = $aircraft;
+        public string $flightNumber,    // Flight number
+        public Airport $origin,         // Origin airport
+        public Airport $destination,    // Destination airport
+        public DateTime $departureTime, // Departure time (DateTime object)
+        public Aircraft $aircraft       // Aircraft
+    ){}
+    
+      // Method to calculate distance between origin and destination
+      public function getDistance(): float {
+        $earthRadius = 6371; // Earth's radius in kilometers
 
-        $this->validate();
+        // Convert latitude and longitude from degrees to radians
+        $latFrom = deg2rad($this->origin->platumaGradi);
+        $lonFrom = deg2rad($this->origin->garumaGradi);
+        $latTo = deg2rad($this->destination->platumaGradi);
+        $lonTo = deg2rad($this->destination->garumaGradi);
+
+        // Haversine formula
+        $latDelta = $latTo - $latFrom;
+        $lonDelta = $lonTo - $lonFrom;
+
+        $a = sin($latDelta / 2) ** 2 +
+             cos($latFrom) * cos($latTo) * sin($lonDelta / 2) ** 2;
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c; // Distance in kilometers
+      }
+      public function getDuration(): int {
+        $distance = $this->getDistance();
+        $speed = $this->aircraft->atrums; // Aircraft speed in km/h
+
+        // Calculate flight time in hours and convert to minutes
+        $flightTimeMinutes = ($distance / $speed) * 60;
+
+        // Add 30 minutes for preparation time
+        return (int)($flightTimeMinutes + 30);
     }
-
-    /**
-     * Validē lidojuma datus.
-     *
-     * @throws Exception Ja dati nav derīgi
-     */
-    private function validate(): void {
-        if (empty($this->flightCode)) {
-            throw new Exception("Lidojuma kods nevar būt tukšs.");
-        }
-
-        if (empty($this->origin) || empty($this->destination)) {
-            throw new Exception("Izlidošanas vai galamērķa lidosta nevar būt tukša.");
-        }
-
-        if ($this->origin === $this->destination) {
-            throw new Exception("Izlidošanas lidosta nevar sakrist ar galamērķa lidostu.");
-        }
-
-        $now = new DateTime();
-        if ($this->departureTime < $now) {
-            throw new Exception("Izlidošanas laiks nevar būt pagātnē.");
-        }
-
-        if (empty($this->aircraft)) {
-            throw new Exception("Lidmašīna nevar būt tukša.");
-        }
-    }
-
-    // Getteri un, ja nepieciešams, setteri
-    public function getFlightCode(): string {
-        return $this->flightCode;
-    }
-
-    public function getOrigin(): string {
-        return $this->origin;
-    }
-
-    public function getDestination(): string {
-        return $this->destination;
-    }
-
-    public function getDepartureTime(): DateTime {
-        return $this->departureTime;
-    }
-
-    public function getAircraft(): string {
-        return $this->aircraft;
-    }
-}
-
-// Piemēra lietojums
-try {
-    $origin = "RIX"; // Rīgas lidosta
-    $destination = "LHR"; // Londonas lidosta
-    $departureTime = new DateTime("2024-12-01 15:30", new DateTimeZone("Europe/Riga"));
-    $aircraft = "Airbus A320";
-
-    $flight = new Lidojums("SA503", $origin, $destination, $departureTime, $aircraft);
-
-    echo "Lidojums veiksmīgi izveidots: " . $flight->getFlightCode();
-} catch (Exception $e) {
-    echo "Kļūda: " . $e->getMessage();
 }
